@@ -102,10 +102,16 @@ In text: We look if one of the elements in $K$ occurs in the text. We do this al
 
 ## Parsing the Text
 
-# Howto
+# Installation
 
 Install package with pip:
 
 ```
 pip install py-grammark
+```
+
+# Run tests
+
+```
+python3 -m unittest tests.test_grammark.TestGrammark
 ```
