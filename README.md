@@ -26,7 +26,7 @@ Let $I$ be the set of irregulars and $H$ be the set of helpers with sets as defi
 
 The passive voice check hits, if for a word $w \in W$
 
-$(w[|w| - 1:|w|] == "ed" \lor w \in I) \land pre(w) \in H$
+$(w[|w| - 1:|w|] = "ed" \lor w \in I) \land pre(w) \in H$
 
 In text: Every word that ends with "ed" or is an irregular verb and the predecessing word is a helper word.
 
@@ -101,3 +101,11 @@ $\forall k \in K: w = k \lor w = upper(k)$
 In text: We look if one of the elements in $K$ occurs in the text. We do this also for the situation, that it has a capitalized first letter.
 
 ## Parsing the Text
+
+# Howto
+
+Install package with pip:
+
+```
+pip install py-grammark
+```

@@ -1,2 +1,3 @@
 dist
 src/py_grammark.egg-info
+__pycache__
