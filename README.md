@@ -7,6 +7,44 @@ The contributions of this work can be summarized as follows:
 * The grammar rules are defined in (informal) logic. It is presented in the next section of this README. This makes the workings of grammark more transparent. However, I reverse engineered those rules from the angular app and it is absolutely possible that I made mistakes.
 * The different checks implemented by grammark, e.g., passive voice, wordiness, academic style..., are provided as functions in the Python package. The functions return the ratings, as proposed by grammark and offsets indicating the problematic positions.
 
+# Usage
+
+```
+from grammark import check_wordiness, \
+				check_nominalizations, \
+				check_passive_voice, \
+				check_sentences, \
+				check_academic, \
+				check_transitions, \
+				check_grammar, \
+				check_eggcorns
+
+text = "This is some string."
+
+check_wordiness(text)
+check_normalizations(text)
+...
+```
+Every function can be called with the text as parameter. Text must be of type string.
+
+The return values look as follows:
+
+```
+{
+	"findings": [
+		{"start_pos": 10, "end_pos": 12, "remark": "Some remark or None, if there is no"},
+		...
+	],
+	"score": 40
+}
+```
+
+It returns a dictionary. The score is calculated as defined by Grammark (https://github.com/markfullmer/grammark).
+The findings contain the offsets, where the found problem, resides in the provided text.
+
+The remarks are provided by Grammark. Again all credits goes to https://github.com/markfullmer/grammark.
+The remark can be `None` if there are no remarks for a certain check.
+
 # An (Informal) Definition of the Grammar Rules
 
 In the following we define the workings of the different tools provided by grammark.
@@ -101,6 +139,13 @@ $\forall k \in K: w = k \lor w = upper(k)$
 In text: We look if one of the elements in $K$ occurs in the text. We do this also for the situation, that it has a capitalized first letter.
 
 ## Parsing the Text
+
+Basically, we use two variants to work with the text. Either we check word-wise, thereby,
+the text is split based on the following chars " ,.!?:-\n'\")({}". That means word are
+limited by these chars and will be identified as single words.
+
+The other variant is based on regex in the hope that this is for certain operations more efficient.
+
 
 # Installation
 
