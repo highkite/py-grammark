@@ -11,7 +11,7 @@ setuptools.setup(
         description="Checks to improve scientific writing. See https://github.com/markfullmer/grammark for more information.",
         long_description=long_description,
         long_description_content_type="text/markdown",
-        url="https://github.com/pypa/sampleproject",
+        url="https://github.com/highkite/py-grammark",
         project_urls={
             },
         classifiers=[
