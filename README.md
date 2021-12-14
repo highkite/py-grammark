@@ -40,11 +40,11 @@ $\forall k \in K: w = k \lor w = upper(k)$
 
 In text: We look if one of the elements in $K$ occurs in the text. We do this also for the situation, that it has a capitalized first letter.
 
-## Normalizations
+## Nominalizations
 
 Let $E$ be the set of postfixes taken from the file `src/resources/normalizations.json`
 
-The normalization check hits if for a word $w \in W$
+The nominalization check hits if for a word $w \in W$
 
 $\exists a,b \in \mathbb{N}: w[a:b] \in E \land |w| > 7$
 

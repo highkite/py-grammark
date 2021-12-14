@@ -1,3 +1,11 @@
+try:
+    import importlib.resources as pkg_resources
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`.
+    import importlib_resources as pkg_resources
+
+import resources
+
 import json
 import re
 
@@ -6,18 +14,19 @@ EGGCORNS = None
 GRAMMAR = None
 HELPERS = None
 IRREGULARS = None
-NORMALIZATION_POSTFIXES = None
+NOMINALIZATION_POSTFIXES = None
 SENTENCES_STARTS = None
 TRANSITIONS = None
 WORDINESS_WORDS = None
 
+WORD_SEP = "[\-\/#!\"%\^&\*:{}=\-_`~()\s\.\,]"
+WORD_START = "(^|" + WORD_SEP + ")("
+WORD_END = ")(" + WORD_SEP + "|$)"
+
 def load_json(filename):
     """Loads a json object from the file with given filename
     """
-    data = None
-
-    with open(filename) as f:
-        data = json.load(f)
+    data = json.loads(pkg_resources.read_text(resources, str(filename)))
 
     return data
 
@@ -42,15 +51,16 @@ class TextData:
     def get_sentence_count(self):
         """Returns the number of sentences
         """
-        return self.word_values[-1]["sentence"]
+        return self.word_values[-1]["sentence"] + 1
 
     def find_substring(self, substring):
         """Finds the substring in the text and returns the indices
         """
-        values = [{"start_pos": m.start(0), "end_pos": m.end(0), "sentence": None} for m in re.finditer(substring, self.text)]
+        values = [{"start_pos": m.start(2), "end_pos": m.end(2), "sentence": None} for m in re.finditer(WORD_START + substring + WORD_END, self.text)]
 
         # look also for leading upper values
-        values + [{"start_pos": m.start(0), "end_pos": m.end(0), "sentence": None} for m in re.finditer(substring[0].upper() + substring[1:], self.text)]
+        capital_substring = substring[0].upper() + substring[1:]
+        values += [{"start_pos": m.start(2), "end_pos": m.end(2), "sentence": None} for m in re.finditer(WORD_START + capital_substring + WORD_END, self.text)]
 
         return values
 
@@ -86,12 +96,12 @@ class TextData:
 
             start_pos = index
 
-            while text[index] not in " ,.!?:-\n'\")({}":
+            while index < text_len and text[index] not in " ,.!?:-\n'\")({}":
                 index += 1
 
             ret_val.append({"start_pos" : start_pos, "end_pos": index, "sentence": sentence_count})
 
-            if text[index] in ".?!":
+            if index < text_len and text[index] in ".?!":
                 sentence_count += 1
 
             index += 1
@@ -115,7 +125,7 @@ def check_passive_voice(text):
     global HELPERS
 
     if IRREGULARS is None:
-        json_data = load_json("./resources/passive_voice.json")
+        json_data = load_json("passive_voice.json")
         IRREGULARS = json_data["irregulars"]
         HELPERS = json_data["helpers"]
 
@@ -130,9 +140,10 @@ def check_passive_voice(text):
         if word is None:
             break
 
-        if (word.endswith("ed") or word in IRREGULARS) and word.get_word(index - 1) in HELPERS:
+        if (word.endswith("ed") or word in IRREGULARS) and textData.get_word(index - 1) in HELPERS:
+            prev_word_data = textData.word_values[index - 1]
             word_data = textData.word_values[index]
-            ret_values.append({"start_pos": word_data["start_pos"], "end_pos": word_data["end_pos"], "remark": None})
+            ret_values.append({"start_pos": prev_word_data["start_pos"], "end_pos": word_data["end_pos"], "remark": None})
         index += 1
 
     return {"findings": ret_values, "score": (len(ret_values)/textData.get_sentence_count())*100}
@@ -153,7 +164,7 @@ def check_wordiness(text):
     global WORDINESS_WORDS
 
     if WORDINESS_WORDS is None:
-        json_data = load_json("./resources/wordiness.json")
+        json_data = load_json("wordiness.json")
         WORDINESS_WORDS = json_data["keywords"]
 
     textData = TextData(text)
@@ -168,8 +179,8 @@ def check_wordiness(text):
 
     return {"findings": ret_values, "score": (len(ret_values)/textData.get_sentence_count())*100}
 
-def check_normalizations(text):
-    """Checks the given text for normalizations in accordance to grammark
+def check_nominalizations(text):
+    """Checks the given text for nominalizations in accordance to grammark
 
     Return:
     {
@@ -181,11 +192,11 @@ def check_normalizations(text):
     end_pos: is the end position of the problematic fragment
     remark: can be a remark, a proposed correction or None if there is no such thing
     """
-    global NORMALIZATION_POSTFIXES
+    global NOMINALIZATION_POSTFIXES
 
-    if NORMALIZATION_POSTFIXES is None:
-        json_data = load_json("./resources/normalizations.json")
-        NORMALIZATION_POSTFIXES = json_data["postfixes"]
+    if NOMINALIZATION_POSTFIXES is None:
+        json_data = load_json("nominalizations.json")
+        NOMINALIZATION_POSTFIXES = json_data["postfixes"]
 
     textData = TextData(text)
 
@@ -200,7 +211,7 @@ def check_normalizations(text):
             break
 
         if len(word) > 7:
-            for postfix in NORMALIZATION_POSTFIXES:
+            for postfix in NOMINALIZATION_POSTFIXES:
                 if word.endswith(postfix):
                     word_data = textData.word_values[index]
                     ret_values.append({"start_pos": word_data["start_pos"], "end_pos": word_data["end_pos"], "remark": None})
@@ -225,7 +236,7 @@ def check_sentences(text):
     global SENTENCES_STARTS
 
     if SENTENCES_STARTS is None:
-        json_data = load_json("./resources/sentences.json")
+        json_data = load_json("sentences.json")
         SENTENCES_STARTS = json_data["keywords"]
 
     textData = TextData(text)
@@ -237,16 +248,18 @@ def check_sentences(text):
     current_sentence = -1
     sentence_start = -1
 
+    sentence_considered = []
+
     while index < word_count:
         word = textData.get_word(index)
+        word_data = textData.word_values[index]
 
         if word is None:
             break
 
-        if current_sentence != word["sentence"]:
-            current_sentence = word["sentence"]
+        if current_sentence != word_data["sentence"]:
+            current_sentence = word_data["sentence"]
             sentence_word_count = 0
-            word_data = textData.word_values[index]
             sentence_start = word_data["start_pos"]
 
             if word in SENTENCES_STARTS:
@@ -255,8 +268,8 @@ def check_sentences(text):
         else:
             sentence_word_count += 1
 
-        if sentence_word_count > 50:
-            word_data = textData.word_values[index]
+        if sentence_word_count > 50 and current_sentence not in sentence_considered:
+            sentence_considered.append(current_sentence)
             ret_values.append({"start_pos": sentence_start, "end_pos": word_data["end_pos"], "remark": "Sentence to large."})
         index += 1
 
@@ -278,7 +291,7 @@ def check_transitions(text):
     global TRANSITIONS
 
     if TRANSITIONS is None:
-        json_data = load_json("./resources/transitions.json")
+        json_data = load_json("transitions.json")
         TRANSITIONS = json_data["keywords"]
 
     textData = TextData(text)
@@ -309,7 +322,7 @@ def check_academic(text):
     global ACADEMIC
 
     if ACADEMIC is None:
-        json_data = load_json("./resources/academic.json")
+        json_data = load_json("academic.json")
         ACADEMIC = json_data["keywords"]
 
     textData = TextData(text)
@@ -340,7 +353,7 @@ def check_grammar(text):
     global GRAMMAR
 
     if GRAMMAR is None:
-        json_data = load_json("./resources/grammar.json")
+        json_data = load_json("grammar.json")
         GRAMMAR = json_data["keywords"]
 
     textData = TextData(text)
@@ -353,7 +366,7 @@ def check_grammar(text):
         for r in res:
             ret_values.append({"start_pos": r["start_pos"], "end_pos": r["end_pos"], "remark": word[1]})
 
-    return {"findings": ret_values, "score": (len(ret_values)/textData.get_word_count())*100}
+    return {"findings": ret_values, "score": len(ret_values)}
 
 def check_eggcorns(text):
     """Checks the given text for eggcorns in accordance to grammark
@@ -371,7 +384,7 @@ def check_eggcorns(text):
     global EGGCORNS
 
     if EGGCORNS is None:
-        json_data = load_json("./resources/eggcorns.json")
+        json_data = load_json("eggcorns.json")
         EGGCORNS = json_data["keywords"]
 
     textData = TextData(text)
@@ -384,4 +397,4 @@ def check_eggcorns(text):
         for r in res:
             ret_values.append({"start_pos": r["start_pos"], "end_pos": r["end_pos"], "remark": word[1]})
 
-    return {"findings": ret_values, "score": (len(ret_values)/textData.get_word_count())*100}
+    return {"findings": ret_values, "score": len(ret_values)}
