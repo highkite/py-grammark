@@ -1,4 +1,5 @@
-This is a python library, that implements the rules defined by grammark (https://github.com/markfullmer/grammark).
+This is a python port of Grammark. The grammar checker developed by Mark Fullmer.
+Visit https://github.com/markfullmer/grammark to learn more about Grammark.
 All credit goes to markfullmer.
 
 The contributions of this work can be summarized as follows:
@@ -8,6 +9,13 @@ The contributions of this work can be summarized as follows:
 * The different checks implemented by grammark, e.g., passive voice, wordiness, academic style..., are provided as functions in the Python package. The functions return the ratings, as proposed by grammark and offsets indicating the problematic positions.
 
 # Usage
+
+Install package with pip:
+
+```
+pip install py-grammark
+```
+Then import the different functions:
 
 ```
 from grammark import check_wordiness, \
@@ -145,15 +153,6 @@ the text is split based on the following chars " ,.!?:-\n'\")({}". That means wo
 limited by these chars and will be identified as single words.
 
 The other variant is based on regex in the hope that this is for certain operations more efficient.
-
-
-# Installation
-
-Install package with pip:
-
-```
-pip install py-grammark
-```
 
 # Development
 
