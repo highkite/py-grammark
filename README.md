@@ -110,6 +110,14 @@ Install package with pip:
 pip install py-grammark
 ```
 
+# Development
+
+# Build
+
+```
+python3 -m build
+```
+
 # Run tests
 
 ```
