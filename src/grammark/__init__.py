@@ -88,7 +88,7 @@ class TextData:
         text_len = len(text)
 
         while index < text_len:
-            while text[index] == " " and index < text_len:
+            while index < text_len and text[index] == " ":
                 index += 1
 
             if index >= text_len:
@@ -98,6 +98,9 @@ class TextData:
 
             while index < text_len and text[index] not in " ,.!?:-\n'\")({}":
                 index += 1
+
+            if index >= text_len:
+                break
 
             ret_val.append({"start_pos" : start_pos, "end_pos": index, "sentence": sentence_count})
 

@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
         name="py-grammark",
-        version="0.0.1",
+        version="0.0.2",
         author="Thomas Osterland",
         author_email="highway.ita07@web.de",
         description="Checks to improve scientific writing. See https://github.com/markfullmer/grammark for more information.",
